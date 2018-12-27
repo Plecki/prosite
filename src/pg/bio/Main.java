@@ -92,7 +92,7 @@ public class Main {
             }
 
             if (checkAminoacids(patternPart))
-                repeat(repeats, patternPart, result);
+                addPatternPartNTimes(result, patternPart, repeats);
         }
         return result;
     }
@@ -162,7 +162,7 @@ public class Main {
         return new int[]{foundIdStart, sequence.length() - 1};
     }
 
-    private static void repeat(String range, String sequence, List<String> result) {
+    private static void addPatternPartNTimes(List<String> result, String sequence, String range) {
         if (range.contains(",")) {
             // e(i,j) - repetition of e exactly k times, where k≥i and k≤j
             String[] rangeSplitted = range.split(",");
