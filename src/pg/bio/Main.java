@@ -1,7 +1,5 @@
 package pg.bio;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,6 +49,7 @@ public class Main {
             try {
                 List<String> pattern = buildPatternFromLiteral(patternLiteral);
                 patterns.add(pattern);
+//                System.out.println(patternLiteral + ": " + pattern);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -58,54 +57,54 @@ public class Main {
         return patterns;
     }
 
-    private static List<String> buildPatternFromLiteral(String patternLiteral) throws InvalidArgumentException {
+    private static List<String> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
         String[] patterns = patternLiteral.split("-");
         List<String> result = new ArrayList<>();
 
-        for (String p : patterns) {
-            if (p.equals("x")) {
+        for (String pattern : patterns) {
+            String aminoacids;
+            String repeats = "1";
+
+            if (pattern.contains("(") && pattern.endsWith(")")) {
+                int bracketId = pattern.indexOf('(');
+                aminoacids = pattern.substring(0, bracketId);
+                repeats = pattern.substring(bracketId + 1, pattern.length() - 1);
+            } else
+                aminoacids = pattern;
+
+            aminoacids = aminoacids.toUpperCase();
+
+            String patternPart;
+            if (aminoacids.equals("X")) {
                 // x – any amino acid
-                result.add(AMINO_ACIDS);
-            } else if (p.length() == 1 && AMINO_ACIDS.contains(p.toUpperCase())) {
+                patternPart = AMINO_ACIDS;
+            } else if (aminoacids.length() == 1) {
                 // V – any letter, one letter amino acid code,
-                result.add(p.toUpperCase());
-            } else if (p.startsWith("[") && p.endsWith("]")) {
+                patternPart = aminoacids;
+            } else if (aminoacids.startsWith("[") && aminoacids.endsWith("]")) {
                 // […] – one amino acid from bracket
-                result.add(p.substring(1, p.length() - 1).toUpperCase());
-            } else if (p.startsWith("{") && p.endsWith("}")) {
+                patternPart = aminoacids.substring(1, aminoacids.length() - 1);
+            } else if (aminoacids.startsWith("{") && aminoacids.endsWith("}")) {
                 // {…} – one amino acid, but not from bracket
-                String subtractionResult = listSubtraction(p);
-                result.add(subtractionResult);
-            } else if (p.contains("(") && p.endsWith(")")) {
-                String firstSign = p.substring(0, 1).toUpperCase();
-                if (firstSign.equals("X")) {
-                    //x(i) or x(i,j)
-                    String range = p.substring(2, p.length() - 1);
-                    repeat(range, AMINO_ACIDS, result);
-                } else if (AMINO_ACIDS.contains(firstSign)) {
-                    //e(i) or e(i,j)
-                    String range = p.substring(2, p.length() - 1);
-                    repeat(range, firstSign, result);
-                } else if (firstSign.equals("[")) {
-                    // [V](i) or [V](i,j)
-                    int bracketId = p.indexOf('(');
-                    String sequence = p.substring(1, bracketId - 1);
-                    String range = p.substring(bracketId + 1, p.length() - 1);
-                    repeat(range, sequence, result);
-                } else if (firstSign.equals("{")) {
-                    // {V}(i) or {V}(i,j)
-                    int bracketId = p.indexOf('(');
-                    String sequence = listSubtraction(p.substring(0, bracketId));
-                    String range = p.substring(bracketId + 1, p.length() - 1);
-                    repeat(range, sequence, result);
-                } else {
-                    throw new IllegalArgumentException("Wrong pattern: " + patternLiteral);
-                }
+                patternPart = listSubtraction(aminoacids);
             } else {
                 throw new IllegalArgumentException("Wrong pattern: " + patternLiteral);
             }
+
+            if (checkAminoacids(patternPart))
+                repeat(repeats, patternPart, result);
         }
         return result;
+    }
+
+    private static boolean checkAminoacids(String potentialAminoacids) {
+        for (int i = 0; i < potentialAminoacids.length(); i++) {
+            char ch = potentialAminoacids.charAt(i);
+            if (AMINO_ACIDS.indexOf(ch) < 0)
+                throw new IllegalArgumentException(String.format("Not an aminoacid letter: %s, choose one from: '%s'",
+                        Character.toString(ch), AMINO_ACIDS));
+        }
+        return true;
     }
 
     private static List<int[]> findPatternInSequence(String sequence, List<String> pattern) {
@@ -199,9 +198,9 @@ public class Main {
         StringBuilder foundSequences = new StringBuilder();
         for (int[] foundIndex : foundIndices) {
             String found = sequence.substring(foundIndex[0], foundIndex[1] + 1);
-//                        String found = sequence.substring(0, foundIndex[0]) + ">" +
-//                                sequence.substring(foundIndex[0], foundIndex[1] + 1) + "<" +
-//                                sequence.substring(foundIndex[1]+1);
+//            String found = sequence.substring(0, foundIndex[0]) + ">" +
+//                    sequence.substring(foundIndex[0], foundIndex[1] + 1) + "<" +
+//                    sequence.substring(foundIndex[1] + 1);
             foundSequences.append(String.format("\\%d-%d: %s\\ ",
                     foundIndex[0], foundIndex[1], found));
         }
