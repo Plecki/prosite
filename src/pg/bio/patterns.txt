@@ -7,3 +7,4 @@ V(4)
 V(4,5)
 V(2,5)
 P-x-[STA]-x-[LIV]-[IVT]-x-[GS]-G-Y-S-[QL]-G
+S-A-S-V
