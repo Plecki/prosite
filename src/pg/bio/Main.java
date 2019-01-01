@@ -110,17 +110,23 @@ public class Main {
     private static List<int[]> findPatternInSequence(String sequence, List<String> pattern) {
         List<int[]> patternIds = new ArrayList<>();
         int fromIndex = 0;
-        while (true) {
-            int[] patternId = findFirstPattern(sequence, pattern, fromIndex);
-            if (patternId[0] == -1)
+
+        while (fromIndex < sequence.length()) {
+            List<int[]> patternIdTmp = findFirstPattern(sequence, pattern, fromIndex);
+            if(patternIdTmp.size() == 0)
                 break;
-            patternIds.add(patternId);
-            fromIndex = patternId[0] + 1;
+
+            for(int[] patternId: patternIdTmp) {
+                fromIndex = patternId[0] + 1;
+                if(patternId[1] != -1)
+                    patternIds.add(patternId);
+            }
         }
         return patternIds;
     }
 
-    private static int[] findFirstPattern(String sequence, List<String> pattern, int fromIndex) {
+    private static List<int[]> findFirstPattern(String sequence, List<String> pattern, int fromIndex) {
+        List<int[]> ret = new ArrayList<>();
         String seq = sequence.toUpperCase();
         int patternId = 0;
         int foundIdStart = -1;
@@ -140,26 +146,28 @@ public class Main {
                 // next time check the same character with next patternPart
                 patternId++;
                 i--;
-            } else {
-                if (patternId > 0) {
-                    int nextStartingId = foundIdStart == -1 ? fromIndex + 1 : foundIdStart + 1;
-                    return findFirstPattern(sequence, pattern, nextStartingId);
-                }
+            } else if (patternId > 0) {
+                // whole pattern not found, but already started iterating through it, next time start from next index
+                int nextStartingId = foundIdStart == -1 ? fromIndex : foundIdStart;
+                ret.add(new int[]{nextStartingId, -1});
+                return ret;
             }
 
             if (patternId >= pattern.size()) {
-                return new int[]{foundIdStart, foundIdEnd};
+                ret.add(new int[]{foundIdStart, foundIdEnd});
+                return ret;
             }
         }
 
-//        // if the sequence ended, but all remaining patterns are optional
+        // if the sequence ended, but all remaining patterns are optional
         for (int i = patternId; i < pattern.size(); i++) {
             String patterPart = pattern.get(i);
             if (!isOptional(patterPart))
-                return new int[]{-1, -1};
+                return ret;
         }
 
-        return new int[]{foundIdStart, sequence.length() - 1};
+        ret.add(new int[]{foundIdStart, sequence.length() - 1});
+        return ret;
     }
 
     private static void addPatternPartNTimes(List<String> result, String sequence, String range) {
