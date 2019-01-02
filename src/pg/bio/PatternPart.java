@@ -22,7 +22,12 @@ public class PatternPart {
         this.isOptional = patternPart.isOptional;
     }
 
-    static PatternPart buildPatternPart(String patternPartLiteral) {
+    static List<PatternPart> buildPatternParts(String patternPartLiteral, String repeats) {
+        PatternPart part = buildPatternPart(patternPartLiteral);
+        return repeatPatternPart(part, repeats);
+    }
+
+    static PatternPart buildPatternPart(String patternPartLiteral) throws IllegalArgumentException {
         String patternPart;
         if (patternPartLiteral.equals("X")) {
             // x – any amino acid

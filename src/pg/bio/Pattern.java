@@ -103,21 +103,14 @@ class Pattern {
 
             aminoacids = aminoacids.toUpperCase();
 
-            List<PatternPart> parts = makePatternParts(patternLiteral, aminoacids, repeats);
-            result.addAll(parts);
+            try {
+                List<PatternPart> patternParts = PatternPart.buildPatternParts(aminoacids, repeats);
+                result.addAll(patternParts);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Wrong pattern: " + patternLiteral);
+            }
         }
         return result;
-    }
-
-    static List<PatternPart> makePatternParts(String patternLiteral, String aminoacidsLiteral, String repeats) {
-        PatternPart patternPart = null;
-        try {
-            patternPart = PatternPart.buildPatternPart(aminoacidsLiteral);
-        } catch (Exception e) {
-            System.out.println("Wrong pattern: " + patternLiteral);
-        }
-
-        return PatternPart.repeatPatternPart(patternPart, repeats);
     }
 
     Pattern subList(int fromIndex) {

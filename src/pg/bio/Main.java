@@ -47,13 +47,9 @@ public class Main {
     static List<Pattern> makePatterns(List<String> patternsLiteral) {
         List<Pattern> patterns = new ArrayList<>();
         for (String patternLiteral : patternsLiteral) {
-            try {
-                Pattern pattern = new Pattern(patternLiteral);
-                patterns.add(pattern);
-                System.out.println(patternLiteral + ": " + pattern);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            Pattern pattern = new Pattern(patternLiteral);
+            patterns.add(pattern);
+            System.out.println(patternLiteral + ": " + pattern);
         }
         return patterns;
     }
