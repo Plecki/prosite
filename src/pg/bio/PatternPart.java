@@ -42,13 +42,13 @@ public class PatternPart {
         return new PatternPart(patternPart);
     }
 
-    static List<PatternPart> NPatternParts(PatternPart patternPart, String repeats) {
+    static List<PatternPart> repeatPatternPart(PatternPart patternPart, String repeats) {
         List<PatternPart> ret = new ArrayList<>();
         if (repeats.contains(",")) {
             // e(i,j) - repetition of e exactly k times, where k≥i and k≤j
-            String[] repeatsSplitted = repeats.split(",");
-            int min = Integer.parseInt(repeatsSplitted[0]);
-            int max = Integer.parseInt(repeatsSplitted[1]);
+            String[] repeatsSplit = repeats.split(",");
+            int min = Integer.parseInt(repeatsSplit[0]);
+            int max = Integer.parseInt(repeatsSplit[1]);
             for (int i = 0; i < min; i++) {
                 ret.add(new PatternPart(patternPart));
             }

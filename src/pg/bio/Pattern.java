@@ -22,8 +22,8 @@ class Pattern {
         this.patternParts = buildPatternFromLiteral(patternLiteral);
     }
 
-    SortedSet<Main.PatternResult> findInSequence(String sequence) {
-        SortedSet<Main.PatternResult> patternIds = new TreeSet<>();
+    SortedSet<PatternResult> findInSequence(String sequence) {
+        SortedSet<PatternResult> patternIds = new TreeSet<>();
 
         for (int fromIndex = 0; fromIndex < sequence.length(); fromIndex++) {
             patternIds.addAll(this.findPatternsFromIndex(sequence, fromIndex));
@@ -31,16 +31,16 @@ class Pattern {
         return patternIds;
     }
 
-    List<Main.PatternResult> findPatternsFromIndex(String sequence, int fromIndex) {
+    List<PatternResult> findPatternsFromIndex(String sequence, int fromIndex) {
         if (patternParts.isEmpty())
-            return Collections.singletonList(new Main.PatternResult(fromIndex - 1, fromIndex - 1));
+            return Collections.singletonList(new PatternResult(fromIndex - 1, fromIndex - 1));
 
-        List<Main.PatternResult> ret = new ArrayList<>();
+        List<PatternResult> ret = new ArrayList<>();
         String seq = sequence.toUpperCase();
         int patternId = 0;
         int foundIdStart = -1;
         for (int sequenceId = fromIndex; sequenceId < seq.length(); sequenceId++) {
-            PatternPart patternPart = this.get(patternId);
+            PatternPart patternPart = patternParts.get(patternId);
             boolean optional = patternPart.isOptional();
 
             char c = seq.charAt(sequenceId);
@@ -51,10 +51,10 @@ class Pattern {
 
                 if (optional) {
                     // try finding pattern without the use of optional pattern part
-                    List<Main.PatternResult> patternsWithoutOptional = new Pattern(this.subList(patternId + 1))
+                    List<PatternResult> patternsWithoutOptional = this.subList(patternId + 1)
                             .findPatternsFromIndex(sequence, sequenceId);
 
-                    for (Main.PatternResult patternWoutOpt : patternsWithoutOptional) {
+                    for (PatternResult patternWoutOpt : patternsWithoutOptional) {
                         patternWoutOpt.start = foundIdStart;
                         ret.add(patternWoutOpt);
                     }
@@ -70,7 +70,7 @@ class Pattern {
             }
 
             if (patternId >= patternParts.size()) { // whole pattern found
-                ret.add(new Main.PatternResult(foundIdStart, sequenceId));
+                ret.add(new PatternResult(foundIdStart, sequenceId));
                 return ret;
             }
         }
@@ -82,11 +82,11 @@ class Pattern {
                 return ret;
         }
 
-        ret.add(new Main.PatternResult(foundIdStart, sequence.length() - 1));
+        ret.add(new PatternResult(foundIdStart, sequence.length() - 1));
         return ret;
     }
 
-    List<PatternPart> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
+    static List<PatternPart> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
         String[] patternPartsLiteral = patternLiteral.split("-");
         List<PatternPart> result = new ArrayList<>();
 
@@ -109,7 +109,7 @@ class Pattern {
         return result;
     }
 
-    List<PatternPart> makePatternParts(String patternLiteral, String aminoacidsLiteral, String repeats) {
+    static List<PatternPart> makePatternParts(String patternLiteral, String aminoacidsLiteral, String repeats) {
         PatternPart patternPart = null;
         try {
             patternPart = PatternPart.buildPatternPart(aminoacidsLiteral);
@@ -117,11 +117,7 @@ class Pattern {
             System.out.println("Wrong pattern: " + patternLiteral);
         }
 
-        return PatternPart.NPatternParts(patternPart, repeats);
-    }
-
-    PatternPart get(int patternId) {
-        return patternParts.get(patternId);
+        return PatternPart.repeatPatternPart(patternPart, repeats);
     }
 
     Pattern subList(int fromIndex) {
@@ -132,5 +128,22 @@ class Pattern {
     public String toString() {
         List<String> parts = patternParts.stream().map(PatternPart::toString).collect(Collectors.toList());
         return String.join("-", parts);
+    }
+
+
+    static class PatternResult implements Comparable {
+        int start;
+        int end;
+
+        PatternResult(int start, int end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            PatternResult ob = (PatternResult) o;
+            return start != ob.start ? start - ob.start : end - ob.end;
+        }
     }
 }

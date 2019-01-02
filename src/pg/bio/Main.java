@@ -31,7 +31,7 @@ public class Main {
                 String patternLiteral = patternsLiteral.get(i);
                 Pattern pattern = patterns.get(i);
 
-                SortedSet<PatternResult> foundIndices = pattern.findInSequence(sequence);
+                SortedSet<Pattern.PatternResult> foundIndices = pattern.findInSequence(sequence);
                 if (foundIndices.size() > 0) {
                     patternFound = true;
                     printSequence(sequence, patternLiteral, foundIndices);
@@ -67,9 +67,9 @@ public class Main {
         return aminoAcidsChars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 
-    static void printSequence(String sequence, String patternLiteral, SortedSet<PatternResult> foundIndices) {
+    static void printSequence(String sequence, String patternLiteral, SortedSet<Pattern.PatternResult> foundIndices) {
         StringBuilder foundSequences = new StringBuilder();
-        for (PatternResult foundIndex : foundIndices) {
+        for (Pattern.PatternResult foundIndex : foundIndices) {
             String found = sequence.substring(foundIndex.start, foundIndex.end + 1);
 //            String found = sequence.substring(0, foundIndex.start) + ">" +
 //                    sequence.substring(foundIndex.start, foundIndex.end + 1) + "<" +
@@ -82,19 +82,4 @@ public class Main {
     }
 
 
-    static class PatternResult implements Comparable {
-        int start;
-        int end;
-
-        PatternResult(int start, int end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        @Override
-        public int compareTo(Object o) {
-            PatternResult ob = (PatternResult) o;
-            return start != ob.start ? start - ob.start : end - ob.end;
-        }
-    }
 }
