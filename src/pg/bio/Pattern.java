@@ -3,26 +3,26 @@ package pg.bio;
 import java.util.*;
 import java.util.stream.Collectors;
 
-class Pattern {
+public class Pattern {
     private List<PatternPart> patternParts;
 
-    Pattern() {
+    public Pattern() {
         this.patternParts = new ArrayList<>();
     }
 
-    Pattern(List<PatternPart> patternParts) {
+    public Pattern(List<PatternPart> patternParts) {
         this.patternParts = patternParts;
     }
 
-    Pattern(Pattern pattern) {
+    public Pattern(Pattern pattern) {
         patternParts = new ArrayList<>(pattern.patternParts);
     }
 
-    Pattern(String patternLiteral) {
+    public Pattern(String patternLiteral) {
         this.patternParts = buildPatternFromLiteral(patternLiteral);
     }
 
-    SortedSet<PatternResult> findInSequence(String sequence) {
+    public SortedSet<PatternResult> findInSequence(String sequence) {
         SortedSet<PatternResult> patternIds = new TreeSet<>();
 
         for (int fromIndex = 0; fromIndex < sequence.length(); fromIndex++) {
@@ -31,7 +31,7 @@ class Pattern {
         return patternIds;
     }
 
-    List<PatternResult> findPatternsFromIndex(String sequence, int fromIndex) {
+    public List<PatternResult> findPatternsFromIndex(String sequence, int fromIndex) {
         if (patternParts.isEmpty())
             return Collections.singletonList(new PatternResult(fromIndex - 1, fromIndex - 1));
 
@@ -86,7 +86,7 @@ class Pattern {
         return ret;
     }
 
-    static List<PatternPart> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
+    public static List<PatternPart> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
         String[] patternPartsLiteral = patternLiteral.split("-");
         List<PatternPart> result = new ArrayList<>();
 
@@ -113,7 +113,11 @@ class Pattern {
         return result;
     }
 
-    Pattern subList(int fromIndex) {
+    public List<PatternPart> getPatternParts() {
+        return patternParts;
+    }
+
+    public Pattern subList(int fromIndex) {
         return new Pattern(patternParts.subList(fromIndex, patternParts.size()));
     }
 
@@ -124,11 +128,11 @@ class Pattern {
     }
 
 
-    static class PatternResult implements Comparable {
+    public static class PatternResult implements Comparable {
         int start;
         int end;
 
-        PatternResult(int start, int end) {
+        public PatternResult(int start, int end) {
             this.start = start;
             this.end = end;
         }

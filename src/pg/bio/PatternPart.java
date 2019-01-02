@@ -7,27 +7,27 @@ public class PatternPart {
     private String part;
     private boolean isOptional = false;
 
-    PatternPart(String part) {
+    public PatternPart(String part) {
         checkAminoacidLetters(part);
         this.part = part;
     }
 
-    PatternPart(PatternPart patternPart, boolean isOptional) {
+    public PatternPart(PatternPart patternPart, boolean isOptional) {
         this(patternPart.part);
         this.isOptional = isOptional;
     }
 
-    PatternPart(PatternPart patternPart) {
+    public PatternPart(PatternPart patternPart) {
         this.part = patternPart.part;
         this.isOptional = patternPart.isOptional;
     }
 
-    static List<PatternPart> buildPatternParts(String patternPartLiteral, String repeats) {
+    public static List<PatternPart> buildPatternParts(String patternPartLiteral, String repeats) {
         PatternPart part = buildPatternPart(patternPartLiteral);
         return repeatPatternPart(part, repeats);
     }
 
-    static PatternPart buildPatternPart(String patternPartLiteral) throws IllegalArgumentException {
+    public static PatternPart buildPatternPart(String patternPartLiteral) throws IllegalArgumentException {
         String patternPart;
         if (patternPartLiteral.equals("X")) {
             // x – any amino acid
@@ -47,7 +47,7 @@ public class PatternPart {
         return new PatternPart(patternPart);
     }
 
-    static List<PatternPart> repeatPatternPart(PatternPart patternPart, String repeats) {
+    public static List<PatternPart> repeatPatternPart(PatternPart patternPart, String repeats) {
         List<PatternPart> ret = new ArrayList<>();
         if (repeats.contains(",")) {
             // e(i,j) - repetition of e exactly k times, where k≥i and k≤j
@@ -85,7 +85,11 @@ public class PatternPart {
         return true;
     }
 
-    boolean isOptional() {
+    public String getPart() {
+        return part;
+    }
+
+    public boolean isOptional() {
         return isOptional;
     }
 

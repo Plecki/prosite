@@ -4,21 +4,20 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
-    static final String AMINO_ACIDS = "ARNDCEQGHILKMFPSTWYV";
+    public static final String AMINO_ACIDS = "ARNDCEQGHILKMFPSTWYV";
+    public static String patternsFile = ".\\src\\pg\\bio\\patterns.txt";
+    public static final String sequencesFile = ".\\src\\pg\\bio\\sequences.txt";
 
     public static void main(String[] args) {
         List<String> patternsLiteral = Collections.emptyList();
         List<String> sequences = Collections.emptyList();
         try {
-            patternsLiteral = Files.readAllLines(Paths.get(".\\src\\pg\\bio\\patterns.txt"), StandardCharsets.UTF_8);
-            sequences = Files.readAllLines(Paths.get(".\\src\\pg\\bio\\sequences.txt"), StandardCharsets.UTF_8);
+            patternsLiteral = readFile(patternsFile);
+            sequences = readFile(sequencesFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -26,25 +25,37 @@ public class Main {
         List<Pattern> patterns = makePatterns(patternsLiteral);
 
         for (String sequence : sequences) {
-            boolean patternFound = false;
-            for (int i = 0; i < patterns.size(); i++) {
-                String patternLiteral = patternsLiteral.get(i);
-                Pattern pattern = patterns.get(i);
+            Map<Pattern, SortedSet<Pattern.PatternResult>> patternsInSequence =
+                    findPatternsInSequence(sequence, patternsLiteral, patterns);
 
-                SortedSet<Pattern.PatternResult> foundIndices = pattern.findInSequence(sequence);
-                if (foundIndices.size() > 0) {
-                    patternFound = true;
-                    printSequence(sequence, patternLiteral, foundIndices);
-                }
-            }
-
-            if (!patternFound) {
+            if(patternsInSequence.isEmpty())
                 System.out.println("No pattern found in sequence: " + sequence);
-            }
         }
     }
 
-    static List<Pattern> makePatterns(List<String> patternsLiteral) {
+    public static Map<Pattern, SortedSet<Pattern.PatternResult>>
+    findPatternsInSequence(String sequence, List<String> patternsLiteral, List<Pattern> patterns) {
+        Map<Pattern, SortedSet<Pattern.PatternResult>> ret = new HashMap<>();
+
+        for (int i = 0; i < patterns.size(); i++) {
+            String patternLiteral = patternsLiteral.get(i);
+            Pattern pattern = patterns.get(i);
+
+            SortedSet<Pattern.PatternResult> foundIndices = pattern.findInSequence(sequence);
+            if (!foundIndices.isEmpty()) {
+                ret.put(pattern, foundIndices);
+                printSequence(sequence, patternLiteral, foundIndices);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<String> readFile(String path) throws IOException {
+        return Files.readAllLines(Paths.get(path), StandardCharsets.UTF_8);
+    }
+
+    public static List<Pattern> makePatterns(List<String> patternsLiteral) {
         List<Pattern> patterns = new ArrayList<>();
         for (String patternLiteral : patternsLiteral) {
             Pattern pattern = new Pattern(patternLiteral);
@@ -55,7 +66,7 @@ public class Main {
     }
 
 
-    static String aminoacidsWithout(String forbiddenAminoacids) {
+    public static String aminoacidsWithout(String forbiddenAminoacids) {
         List<Character> aminoAcidsChars = AMINO_ACIDS.chars().mapToObj(i -> (char) i).collect(Collectors.toList());
         List<Character> patternChars = forbiddenAminoacids
                 .toUpperCase().chars().mapToObj(i -> (char) i).collect(Collectors.toList());
@@ -63,7 +74,7 @@ public class Main {
         return aminoAcidsChars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 
-    static void printSequence(String sequence, String patternLiteral, SortedSet<Pattern.PatternResult> foundIndices) {
+    public static void printSequence(String sequence, String patternLiteral, SortedSet<Pattern.PatternResult> foundIndices) {
         StringBuilder foundSequences = new StringBuilder();
         for (Pattern.PatternResult foundIndex : foundIndices) {
             String found = sequence.substring(foundIndex.start, foundIndex.end + 1);
