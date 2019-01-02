@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -30,7 +28,7 @@ public class Main {
                 String patternLiteral = patternsLiteral.get(i);
                 List<String> pattern = patterns.get(i);
 
-                List<int[]> foundIndices = findPatternInSequence(sequence, pattern);
+                SortedSet<PatternResult> foundIndices = findPatternInSequence(sequence, pattern);
                 if (foundIndices.size() > 0) {
                     patternFound = true;
                     printSequence(sequence, patternLiteral, foundIndices);
@@ -107,40 +105,55 @@ public class Main {
         return true;
     }
 
-    private static List<int[]> findPatternInSequence(String sequence, List<String> pattern) {
-        List<int[]> patternIds = new ArrayList<>();
+    private static SortedSet<PatternResult> findPatternInSequence(String sequence, List<String> pattern) {
+        SortedSet<PatternResult> patternIds = new TreeSet<>();
         int fromIndex = 0;
 
         while (fromIndex < sequence.length()) {
-            List<int[]> patternIdTmp = findFirstPattern(sequence, pattern, fromIndex);
-            if(patternIdTmp.size() == 0)
+            List<PatternResult> patternIdTmp = findPatternsFromIndex(sequence, pattern, fromIndex);
+            if (patternIdTmp.size() == 0)
                 break;
 
-            for(int[] patternId: patternIdTmp) {
-                fromIndex = patternId[0] + 1;
-                if(patternId[1] != -1)
+            for (PatternResult patternId : patternIdTmp) {
+                fromIndex = patternId.start + 1;
+                if (patternId.end != -1)
                     patternIds.add(patternId);
             }
         }
         return patternIds;
     }
 
-    private static List<int[]> findFirstPattern(String sequence, List<String> pattern, int fromIndex) {
-        List<int[]> ret = new ArrayList<>();
+    private static List<PatternResult> findPatternsFromIndex(String sequence, List<String> pattern, int fromIndex) {
+        if(pattern.size() == 0)
+            return new ArrayList<>(Collections.singletonList(new PatternResult(fromIndex - 1, fromIndex - 1)));
+
+        List<PatternResult> ret = new ArrayList<>();
         String seq = sequence.toUpperCase();
         int patternId = 0;
         int foundIdStart = -1;
-        int foundIdEnd = -1;
         for (int i = fromIndex; i < seq.length(); i++) {
             String patternPart = pattern.get(patternId);
             boolean optional = isOptional(patternPart);
 
             char c = seq.charAt(i);
             if (patternPart.indexOf(c) >= 0) {
-                if (patternId == 0) {
+                if (foundIdStart == -1) {
                     foundIdStart = i;
                 }
-                foundIdEnd = i;
+
+                if (optional) {
+                    // try finding pattern without the use of optional pattern part
+                    List<PatternResult> patternsWithoutOptional =
+                            findPatternsFromIndex(sequence, pattern.subList(patternId + 1, pattern.size()), i);
+
+                    for (PatternResult patternWoutOpt : patternsWithoutOptional) {
+                        if (patternWoutOpt.end != -1) {
+                            patternWoutOpt.start = foundIdStart;
+                            ret.add(patternWoutOpt);
+                        }
+                    }
+                }
+
                 patternId++;
             } else if (optional) {
                 // next time check the same character with next patternPart
@@ -149,12 +162,12 @@ public class Main {
             } else if (patternId > 0) {
                 // whole pattern not found, but already started iterating through it, next time start from next index
                 int nextStartingId = foundIdStart == -1 ? fromIndex : foundIdStart;
-                ret.add(new int[]{nextStartingId, -1});
+                ret.add(new PatternResult(nextStartingId, -1));
                 return ret;
             }
 
             if (patternId >= pattern.size()) {
-                ret.add(new int[]{foundIdStart, foundIdEnd});
+                ret.add(new PatternResult(foundIdStart, i));
                 return ret;
             }
         }
@@ -166,7 +179,7 @@ public class Main {
                 return ret;
         }
 
-        ret.add(new int[]{foundIdStart, sequence.length() - 1});
+        ret.add(new PatternResult(foundIdStart, sequence.length() - 1));
         return ret;
     }
 
@@ -202,17 +215,36 @@ public class Main {
         return patternPart.contains("?");
     }
 
-    private static void printSequence(String sequence, String patternLiteral, List<int[]> foundIndices) {
+    private static void printSequence(String sequence, String patternLiteral, SortedSet<PatternResult> foundIndices) {
         StringBuilder foundSequences = new StringBuilder();
-        for (int[] foundIndex : foundIndices) {
-            String found = sequence.substring(foundIndex[0], foundIndex[1] + 1);
-//            String found = sequence.substring(0, foundIndex[0]) + ">" +
-//                    sequence.substring(foundIndex[0], foundIndex[1] + 1) + "<" +
-//                    sequence.substring(foundIndex[1] + 1);
+        for (PatternResult foundIndex : foundIndices) {
+            String found = sequence.substring(foundIndex.start, foundIndex.end + 1);
+//            String found = sequence.substring(0, foundIndex.start) + ">" +
+//                    sequence.substring(foundIndex.start, foundIndex.end + 1) + "<" +
+//                    sequence.substring(foundIndex.end + 1);
             foundSequences.append(String.format("\\%d-%d: %s\\ ",
-                    foundIndex[0], foundIndex[1], found));
+                    foundIndex.start, foundIndex.end, found));
         }
         System.out.println(String.format("sequence: %s, pattern: %s, found: %s",
                 sequence, patternLiteral, foundSequences.toString()));
+    }
+
+
+    private static class PatternResult implements Comparable{
+        int start;
+        int end;
+
+        PatternResult(int start, int end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            PatternResult ob = (PatternResult)o;
+            return start != ob.start ? start - ob.start : end - ob.end;
+        }
+
+
     }
 }

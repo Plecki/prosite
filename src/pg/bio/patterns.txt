@@ -2,9 +2,10 @@
 A-x-[ST](2)-x(0,1)-V
 A-x-{AV}(2)-x(0,1)-V
 [RK]-G-{EDRKHPCG}-[AGSCI]-[FY]-[LIVA]-x-[FYM]
-V(2)
-V(4)
-V(4,5)
-V(2,5)
 P-x-[STA]-x-[LIV]-[IVT]-x-[GS]-G-Y-S-[QL]-G
 S-A-S-V
+V(2)
+V(4,5)
+V(2,5)
+V(1,4)-V
+V(0,3)-x-V
