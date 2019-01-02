@@ -40,7 +40,7 @@ public class PrositeTest {
         for (pg.bio.Pattern pattern : patterns) {
             String regexPattern = regexPattern(pattern);
             patternsRegex.add(regexPattern);
-            System.out.println(regexPattern);
+//            System.out.println(regexPattern);
         }
 
         for (String sequence : sequences) {
@@ -48,25 +48,27 @@ public class PrositeTest {
 
             for (int i = 0; i < patterns.size(); i++) {
                 SortedSet<Pattern.PatternResult> foundIndices = new TreeSet<>();
-                String patternLiteral = patternsLiteral.get(i);
-                pg.bio.Pattern pattern = patterns.get(i);
-                String patternRegex = patternsRegex.get(i);
 
-                SortedSet<Pattern.PatternResult> myFind = pattern.findInSequence(sequence);
+                SortedSet<Pattern.PatternResult> myFind = patterns.get(i).findInSequence(sequence);
 
-                java.util.regex.Pattern pat = java.util.regex.Pattern.compile(patternRegex);
+                java.util.regex.Pattern pat = java.util.regex.Pattern.compile(patternsRegex.get(i));
                 Matcher matcher = pat.matcher(sequence);
                 while (matcher.find()) {
                     MatchResult matchResult = matcher.toMatchResult();
                     Pattern.PatternResult res = new Pattern.PatternResult(matchResult.start(), matchResult.end() - 1);
-                    Assert.assertTrue(myFind.contains(res));
                     foundIndices.add(res);
+
+                    Assert.assertTrue(myFind.contains(res));
                 }
 
                 if (!foundIndices.isEmpty()) {
-                    printSequence(sequence, patternLiteral, foundIndices);
+                    ret.put(patterns.get(i), foundIndices);
+                    printSequence(sequence, patternsLiteral.get(i), foundIndices);
                 }
             }
+
+            if(ret.isEmpty())
+                System.out.println("No pattern found in sequence: " + sequence);
         }
     }
 

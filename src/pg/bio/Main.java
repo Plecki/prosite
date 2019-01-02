@@ -22,7 +22,10 @@ public class Main {
             e.printStackTrace();
         }
 
+        System.out.println("Patterns:");
         List<Pattern> patterns = makePatterns(patternsLiteral);
+        System.out.println();
+
 
         for (String sequence : sequences) {
             Map<Pattern, SortedSet<Pattern.PatternResult>> patternsInSequence =
