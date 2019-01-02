@@ -20,13 +20,13 @@ public class Main {
             e.printStackTrace();
         }
 
-        List<List<String>> patterns = makePatterns(patternsLiteral);
+        List<Pattern> patterns = makePatterns(patternsLiteral);
 
         for (String sequence : sequences) {
             boolean patternFound = false;
             for (int i = 0; i < patterns.size(); i++) {
                 String patternLiteral = patternsLiteral.get(i);
-                List<String> pattern = patterns.get(i);
+                Pattern pattern = patterns.get(i);
 
                 SortedSet<PatternResult> foundIndices = findPatternInSequence(sequence, pattern);
                 if (foundIndices.size() > 0) {
@@ -41,11 +41,11 @@ public class Main {
         }
     }
 
-    private static List<List<String>> makePatterns(List<String> patternsLiteral) {
-        List<List<String>> patterns = new ArrayList<>();
+    private static List<Pattern> makePatterns(List<String> patternsLiteral) {
+        List<Pattern> patterns = new ArrayList<>();
         for (String patternLiteral : patternsLiteral) {
             try {
-                List<String> pattern = buildPatternFromLiteral(patternLiteral);
+                Pattern pattern = buildPatternFromLiteral(patternLiteral);
                 patterns.add(pattern);
 //                System.out.println(patternLiteral + ": " + pattern);
             } catch (Exception e) {
@@ -55,9 +55,9 @@ public class Main {
         return patterns;
     }
 
-    private static List<String> buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
+    private static Pattern buildPatternFromLiteral(String patternLiteral) throws IllegalArgumentException {
         String[] patterns = patternLiteral.split("-");
-        List<String> result = new ArrayList<>();
+        Pattern result = new Pattern();
 
         for (String pattern : patterns) {
             String aminoacids;
@@ -84,18 +84,18 @@ public class Main {
                 patternPart = aminoacids.substring(1, aminoacids.length() - 1);
             } else if (aminoacids.startsWith("{") && aminoacids.endsWith("}")) {
                 // {…} – one amino acid, but not from bracket
-                patternPart = listSubtraction(aminoacids);
+                patternPart = aminoacidsWithout(aminoacids.substring(1, aminoacids.length() - 1));
             } else {
                 throw new IllegalArgumentException("Wrong pattern: " + patternLiteral);
             }
 
-            if (checkAminoacids(patternPart))
+            if (checkAminoacidLetters(patternPart))
                 addPatternPartNTimes(result, patternPart, repeats);
         }
         return result;
     }
 
-    private static boolean checkAminoacids(String potentialAminoacids) {
+    private static boolean checkAminoacidLetters(String potentialAminoacids) {
         for (int i = 0; i < potentialAminoacids.length(); i++) {
             char ch = potentialAminoacids.charAt(i);
             if (AMINO_ACIDS.indexOf(ch) < 0)
@@ -105,69 +105,55 @@ public class Main {
         return true;
     }
 
-    private static SortedSet<PatternResult> findPatternInSequence(String sequence, List<String> pattern) {
+    private static SortedSet<PatternResult> findPatternInSequence(String sequence, Pattern pattern) {
         SortedSet<PatternResult> patternIds = new TreeSet<>();
-        int fromIndex = 0;
 
-        while (fromIndex < sequence.length()) {
-            List<PatternResult> patternIdTmp = findPatternsFromIndex(sequence, pattern, fromIndex);
-            if (patternIdTmp.size() == 0)
-                break;
-
-            for (PatternResult patternId : patternIdTmp) {
-                fromIndex = patternId.start + 1;
-                if (patternId.end != -1)
-                    patternIds.add(patternId);
-            }
+        for (int fromIndex = 0; fromIndex < sequence.length(); fromIndex++) {
+            patternIds.addAll(findPatternsFromIndex(sequence, pattern, fromIndex));
         }
         return patternIds;
     }
 
-    private static List<PatternResult> findPatternsFromIndex(String sequence, List<String> pattern, int fromIndex) {
-        if(pattern.size() == 0)
+    private static List<PatternResult> findPatternsFromIndex(String sequence, Pattern pattern, int fromIndex) {
+        if(pattern.isEmpty())
             return new ArrayList<>(Collections.singletonList(new PatternResult(fromIndex - 1, fromIndex - 1)));
 
         List<PatternResult> ret = new ArrayList<>();
         String seq = sequence.toUpperCase();
         int patternId = 0;
         int foundIdStart = -1;
-        for (int i = fromIndex; i < seq.length(); i++) {
+        for (int sequenceId = fromIndex; sequenceId < seq.length(); sequenceId++) {
             String patternPart = pattern.get(patternId);
             boolean optional = isOptional(patternPart);
 
-            char c = seq.charAt(i);
-            if (patternPart.indexOf(c) >= 0) {
+            char c = seq.charAt(sequenceId);
+            if (patternPart.indexOf(c) >= 0) {  // pattern part found
                 if (foundIdStart == -1) {
-                    foundIdStart = i;
+                    foundIdStart = sequenceId;
                 }
 
                 if (optional) {
                     // try finding pattern without the use of optional pattern part
                     List<PatternResult> patternsWithoutOptional =
-                            findPatternsFromIndex(sequence, pattern.subList(patternId + 1, pattern.size()), i);
+                            findPatternsFromIndex(sequence, pattern.subList(patternId + 1), sequenceId);
 
                     for (PatternResult patternWoutOpt : patternsWithoutOptional) {
-                        if (patternWoutOpt.end != -1) {
-                            patternWoutOpt.start = foundIdStart;
-                            ret.add(patternWoutOpt);
-                        }
+                        patternWoutOpt.start = foundIdStart;
+                        ret.add(patternWoutOpt);
                     }
                 }
 
                 patternId++;
-            } else if (optional) {
+            } else if (optional) {  // pattern part not found, but it's optional so it's ok
                 // next time check the same character with next patternPart
                 patternId++;
-                i--;
-            } else if (patternId > 0) {
-                // whole pattern not found, but already started iterating through it, next time start from next index
-                int nextStartingId = foundIdStart == -1 ? fromIndex : foundIdStart;
-                ret.add(new PatternResult(nextStartingId, -1));
+                sequenceId--;
+            } else { // pattern part not found
                 return ret;
             }
 
-            if (patternId >= pattern.size()) {
-                ret.add(new PatternResult(foundIdStart, i));
+            if (patternId >= pattern.size()) { // whole pattern found
+                ret.add(new PatternResult(foundIdStart, sequenceId));
                 return ret;
             }
         }
@@ -183,7 +169,7 @@ public class Main {
         return ret;
     }
 
-    private static void addPatternPartNTimes(List<String> result, String sequence, String range) {
+    private static void addPatternPartNTimes(Pattern result, String sequence, String range) {
         if (range.contains(",")) {
             // e(i,j) - repetition of e exactly k times, where k≥i and k≤j
             String[] rangeSplitted = range.split(",");
@@ -204,9 +190,10 @@ public class Main {
         }
     }
 
-    private static String listSubtraction(String p) {
+    private static String aminoacidsWithout(String forbiddenAminoacids) {
         List<Character> aminoAcidsChars = AMINO_ACIDS.chars().mapToObj(i -> (char) i).collect(Collectors.toList());
-        List<Character> patternChars = p.substring(1, p.length() - 1).toUpperCase().chars().mapToObj(i -> (char) i).collect(Collectors.toList());
+        List<Character> patternChars = forbiddenAminoacids
+                .toUpperCase().chars().mapToObj(i -> (char) i).collect(Collectors.toList());
         aminoAcidsChars.removeAll(patternChars);
         return aminoAcidsChars.stream().map(String::valueOf).collect(Collectors.joining());
     }
@@ -230,7 +217,39 @@ public class Main {
     }
 
 
-    private static class PatternResult implements Comparable{
+    private static class Pattern {
+        List<String> patternParts;
+
+        Pattern() {
+            this.patternParts = new ArrayList<>();
+        }
+
+        Pattern(List<String> patternParts) {
+            this.patternParts = patternParts;
+        }
+
+        void add(String patternPart) {
+            this.patternParts.add(patternPart);
+        }
+
+        boolean isEmpty() {
+            return patternParts.isEmpty();
+        }
+
+        String get(int patternId) {
+            return patternParts.get(patternId);
+        }
+
+        int size() {
+            return patternParts.size();
+        }
+
+        Pattern subList(int fromIndex) {
+            return new Pattern(patternParts.subList(fromIndex, patternParts.size()));
+        }
+    }
+
+    private static class PatternResult implements Comparable {
         int start;
         int end;
 
@@ -244,7 +263,5 @@ public class Main {
             PatternResult ob = (PatternResult)o;
             return start != ob.start ? start - ob.start : end - ob.end;
         }
-
-
     }
 }
